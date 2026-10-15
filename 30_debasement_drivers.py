@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-30_debasement_drivers.py — Does Bitcoin respond to gold's drivers?
+30_debasement_drivers.py — Does Bitcoin respond to gold's drivers? (FRL letter, first pass)
 
 Question
-     It never asks whether Bitcoin responds to what moves *gold*.
-    If Bitcoin is "digital gold" in the sense of the 2025-26 "debasement
+    The JRFM paper compares Bitcoin with gold through their relation to *equities*
+    (hedge / safe haven, tail risk in portfolios). It never asks whether Bitcoin responds to
+    what moves *gold*. If Bitcoin is "digital gold" in the sense of the 2025-26 "debasement
     trade", a spot Bitcoin ETF should load on gold's macro drivers with gold's signs:
         H1  real yields       gold falls when real yields rise           (beta_RY  < 0)
         H2  breakeven infl.   gold rises with inflation expectations     (beta_BE  > 0)

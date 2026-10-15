@@ -1,5 +1,5 @@
 """
-30b_fetch_extend.py — Extended price snapshot
+30b_fetch_extend.py — Extended price snapshot for the FRL letter, WITHOUT touching the JRFM snapshot
 
 01d_fetch_scope.py hard-codes END_DATE = 2026-06-16 and the suffix __20260921S. Editing and re-running
 it would overwrite the archived JRFM snapshot, whose SHA-256 checksums are published in the

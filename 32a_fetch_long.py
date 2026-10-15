@@ -1,9 +1,9 @@
 """
-32a_fetch_long.py — Long-history snapshot (2014-2026) , written under a NEW suffix
+32a_fetch_long.py — Long-history snapshot (2014-2026) for the FRL letter, written under a NEW suffix
 
 Reuses the download code of 01d_fetch_scope.py and 30a_fetch_macro.py unchanged (both are imported and
 their settings overridden in memory) and writes everything with the suffix __20261001H, so neither the
- snapshot (__20260921S) nor the snapshots (__20261001F, __20260921D) are touched:
+JRFM snapshot (__20260921S) nor the FRL snapshots (__20261001F, __20260921D) are touched:
 
   Yahoo daily:   SPY, GLD, TLT, TIP, IEF, QQQ, EFA, AGG   2014-09-01 -> end
   Hourly BTC:    Coinbase (primary), Bitstamp (backup)    2015-01-01 -> end

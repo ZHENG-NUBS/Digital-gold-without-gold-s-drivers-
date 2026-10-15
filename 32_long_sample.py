@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-32_long_sample.py — Is summer 2026 unusual in Bitcoin's history?
+32_long_sample.py — Is summer 2026 unusual in Bitcoin's history? (FRL letter, long sample)
 
 The ETF sample (Jan 2024 - Sep 2026) is short. Bitcoin itself trades back to 2015 at hourly
 frequency, and every other series exists over that period, so this script repeats the analysis of

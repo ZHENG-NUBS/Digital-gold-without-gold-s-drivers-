@@ -37,9 +37,9 @@ hold-out period 15 Oct 2026 – 15 Jan 2027. See [Pre-registration](#pre-registr
 
 | Letter | Output |
 |---|---|
-| Table 1 (daily and weekly factor loadings) | `out/30_debasement_20261001F_2026-09-30/report.md` sections A and D; `tables_A_daily.csv`, `tables_D_W.csv` |
-| Table 2 (gold-specific shocks, stability) | `30…/report.md` sections A2, B, E (`report_sectionE.md`); long-sample rows from `out/32_long_sample/report.md` and `out/33_share_tests/report.md` |
-| Table 3 (robustness) | `30…/report.md` section D (`tables_D_2d.csv`); placebo and two-step rows from `out/31_placebo_twostep/report.md` |
+| Table 1 (daily and weekly factor loadings) | `out/30_debasement_20261001F_2026-09-30/report.md` sections A and D2; `tables_A_daily.csv`, `tables_D_W.csv` |
+| Table 2 (gold-specific shocks, stability) | `30…/report.md` sections A2, B, C and E (`report_sectionE.md`); long-sample rows from `out/32_long_sample/report.md` (L3, L4) and `out/33_share_tests/report.md` |
+| Table 3 (robustness) | `30…/report.md` section D (D1, D4; `tables_D_2d.csv`); placebo and two-step rows from `out/31_placebo_twostep/report.md` |
 | Figure 1 | `out/34_figures/Figure1.*`, drawn from `30…/rolling_gres_loading.csv` |
 | Figure 2 | `out/34_figures/Figure2.*`, drawn from `out/32_long_sample/rolling_gamma_long.csv` |
 
@@ -79,7 +79,7 @@ Scripts read from `data/raw/` and write to `out/`.
 ```bash
 # 1. Data (skip if you have the authors' snapshot files in data/raw/)
 python 30a_fetch_macro.py                     # -> __20260921D
-python 30b_fetch_extend.py                    # -> __20261001F (about 10 minutes)
+python 30b_fetch_extend.py                    # -> __20261001F
 python 32a_fetch_long.py                      # -> __20261001H (10-15 minutes)
 
 # 2. Analysis
@@ -90,7 +90,7 @@ python 33_share_tests.py                      # calibrated long-sample tests (Ta
 python 34_figures.py                          # Figures 1 and 2
 ```
 
-`python 30_debasement_drivers.py --selftest` checks the estimators on simulated data. All bootstraps
+`python 30_debasement_drivers.py --selftest` checks the estimators on synthetic data with known loadings. All bootstraps
 use the seed 20261014.
 
 **Known gap (to be closed before submission).** Three entries in Tables 2–3 come from separate runs:
@@ -108,7 +108,10 @@ therefore registered a test of whether it persists on data that did not exist at
 - **Registered:** 15 Oct 2026, AsPredicted #317553.
 - **Approved by:** both authors.
 
-The eight scripts are fixed by the SHA-256 checksums in `PREREGISTRATION_checksums.sha256`, and they
+The eight scripts in this repository are byte-identical to the registered versions, so
+`sha256sum -c PREREGISTRATION_checksums.sha256` reports `OK` for each. For the same reason their
+comments are left as registered, partly in Chinese, and refer to the companion (JRFM) paper and the
+letter (FRL). The eight scripts are fixed by the SHA-256 checksums in `PREREGISTRATION_checksums.sha256`, and they
 will not be edited before the registered analysis is run. The protocol, hypotheses (H1–H3) and the
 reading of each outcome are in `preregistration/PREREGISTRATION_FRL.md`.
 

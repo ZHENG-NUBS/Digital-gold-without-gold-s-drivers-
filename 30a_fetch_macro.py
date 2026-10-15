@@ -1,7 +1,7 @@
 """
-30a_fetch_macro.py —  ("Is Bitcoin in the debasement trade?")
+30a_fetch_macro.py — Macro series for the FRL letter ("Is Bitcoin in the debasement trade?")
 
-Fetches the series and writes them to data/raw/ with the
+Fetches the series that the JRFM paper does not use and writes them to data/raw/ with the
 suffix __20260921D, next to the existing snapshots (which are read, not modified):
 
   FRED  DFII10    10-year TIPS yield (real yield, % p.a.)            -> DFII10__20260921D.csv

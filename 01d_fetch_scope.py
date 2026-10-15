@@ -1,33 +1,32 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-01d_fetch_scope.py — All raw data needed for the empirical scope expansion
+01d_fetch_scope.py — 实证范围扩展所需的全部原始数据（审稿意见：扩展比较对象）
 
-IBIT compared not only with GLD, but also with Bitcoin spot,
-other spot Bitcoin ETFs, other gold instruments, and broader equity and bond benchmarks;
-and that Bitcoin's own properties be separated from ETF-specific factors (expense ratio,
-tracking error, liquidity, trading hours).
+审稿人要求 IBIT 不只和 GLD 比，还要和比特币现货、其他现货比特币 ETF、
+其他黄金工具、更广的股票与债券基准比；并把比特币本身的属性与
+ETF 特有因素（费率、跟踪误差、流动性、交易时间）分开。
 
-This script fetches four categories of data and writes them to data/raw/, with filenames
-carrying the __20260921S suffix (S = scope), coexisting with the main snapshot
-__20260921, the long sample __20260921L, and the ETF appendix __20260921X.
+本脚本抓取四类数据，写入 data/raw/，文件名带 __20260921S 后缀
+（S = scope），与主快照 __20260921、长样本 __20260921L、ETF 附录 __20260921X 并存。
 
-  1. Yahoo daily bars (OHLCV + AdjClose + dividends/splits)
-  2. Bitcoin [hourly] candles (Coinbase primary, Bitstamp backup)
-  3. SPDR official GLD historical archive
-  4. iShares official IBIT historical NAV
+  1. Yahoo 日线（OHLCV + AdjClose + 分红拆股）
+  2. 比特币【小时】K 线（Coinbase 主、Bitstamp 备）
+  3. SPDR 官网 GLD 历史档案
+  4. iShares 官网 IBIT 历史净值
 
-Network access (following the approach already verified to work for the main snapshot)
-    - Yahoo: query1 + no crumb + proxy; split price and events into two requests to avoid
-      events=div,split triggering a 429
-    - Other endpoints: 429 uses a separate long backoff (20/40/60s + jitter)
-    - Failure of an individual ticker does not interrupt the whole run
+联网方式（沿用主快照已验证可用的方案）
+    - Yahoo：query1 + 无 crumb + 代理；价格与事件拆两次请求，避免 events=div,split 触发 429
+    - 其它接口：429 单独走长退避（20/40/60s + 抖动）
+    - 个别标的失败不中断整轮
 
-Note
-    DEFI (Hashdex Bitcoin ETF) was delisted and liquidated on 2026-08-17; the Yahoo chart
-    API returns HTTP 400 for it, so this script does not fetch DEFI.
+注意
+    DEFI（Hashdex Bitcoin ETF）已于 2026-08-17 退市清算，Yahoo chart API
+    对其返回 HTTP 400，故本脚本不抓 DEFI。
 
-Usage:
+用法：
     python 01d_fetch_scope.py
+运行约 8–15 分钟。
 """
 
 from __future__ import annotations
@@ -46,11 +45,11 @@ import pandas as pd
 import requests
 
 # ----------------------------------------------------------------------------
-# Configuration
+# 配置
 # ----------------------------------------------------------------------------
 
 YAHOO = {
-    # —— Bitcoin spot and spot ETFs ——
+    # —— 比特币现货与现货 ETF ——
     "BTC-USD": ("bitcoin", "Bitcoin spot, Yahoo composite (daily bar closes 00:00 UTC)"),
     "IBIT": ("bitcoin", "iShares Bitcoin Trust ETF"),
     "FBTC": ("bitcoin", "Fidelity Wise Origin Bitcoin Fund"),
@@ -64,7 +63,7 @@ YAHOO = {
     "EZBC": ("bitcoin", "Franklin Bitcoin ETF"),
     "BTCW": ("bitcoin", "WisdomTree Bitcoin Fund"),
     "BITO": ("bitcoin", "ProShares Bitcoin Strategy ETF (futures-based)"),
-    # —— Gold ——
+    # —— 黄金 ——
     "GLD":  ("gold", "SPDR Gold Shares"),
     "IAU":  ("gold", "iShares Gold Trust"),
     "GLDM": ("gold", "SPDR Gold MiniShares Trust"),
@@ -73,19 +72,19 @@ YAHOO = {
     "AAAU": ("gold", "Goldman Sachs Physical Gold ETF"),
     "IAUM": ("gold", "iShares Gold Trust Micro"),
     "GC=F": ("gold", "COMEX gold futures, continuous front month"),
-    # —— Equity benchmarks ——
+    # —— 股票基准 ——
     "SPY":  ("equity", "SPDR S&P 500 ETF Trust"),
     "VTI":  ("equity", "Vanguard Total Stock Market ETF"),
     "VT":   ("equity", "Vanguard Total World Stock ETF"),
     "QQQ":  ("equity", "Invesco QQQ Trust (Nasdaq-100)"),
     "EFA":  ("equity", "iShares MSCI EAFE ETF"),
-    # —— Bond benchmarks ——
+    # —— 债券基准 ——
     "TLT":  ("bond", "iShares 20+ Year Treasury Bond ETF"),
     "IEF":  ("bond", "iShares 7-10 Year Treasury Bond ETF"),
     "AGG":  ("bond", "iShares Core U.S. Aggregate Bond ETF"),
     "SHY":  ("bond", "iShares 1-3 Year Treasury Bond ETF"),
     "TIP":  ("bond", "iShares TIPS Bond ETF"),
-    # —— Other ——
+    # —— 其他 ——
     "^VIX": ("other", "CBOE Volatility Index"),
     "^IRX": ("other", "13-week U.S. Treasury bill yield (annualized, %)"),
 }
@@ -96,7 +95,7 @@ AS_OF      = "20260921S"
 
 HERE    = Path(__file__).resolve().parent
 RAW_DIR = HERE / "data" / "raw"
-PROXY   = None #add if needed
+PROXY   = "http://127.0.0.1:20171"   # 实测必须走代理
 TIMEOUT = 30
 RETRIES = 4
 
@@ -110,14 +109,13 @@ IBIT_NAV     = ("https://www.ishares.com/us/products/333011/ishares-bitcoin-trus
 HOURLY_START = "2023-12-29T00:00:00Z"
 HOURLY_END   = "2026-06-16T00:00:00Z"
 
-SLEEP_BETWEEN_CALLS = (5.0, 10.0)   # Between the two Yahoo requests
+SLEEP_BETWEEN_CALLS = (5.0, 10.0)   # Yahoo 两请求之间
 
 # ----------------------------------------------------------------------------
 
 
 def _find_proxy() -> str | None:
-    """PROXY takes priority; otherwise environment variables; otherwise look for
-    PROXY = "..." in 01_fetch_raw.py in common locations."""
+    """PROXY 优先；否则环境变量；否则在常见位置的 01_fetch_raw.py 里找 PROXY = "..."。"""
     if PROXY:
         return PROXY
     for k in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
@@ -129,7 +127,7 @@ def _find_proxy() -> str | None:
         try:
             m = re.search(r'^PROXY\s*=\s*["\']([^"\']+)["\']', c.read_text(encoding="utf-8"), re.M)
             if m:
-                print(f"Using the proxy setting from {c}: {m.group(1)}")
+                print(f"沿用 {c} 里的代理设置：{m.group(1)}")
                 return m.group(1)
         except OSError:
             pass
@@ -148,7 +146,7 @@ def _session(proxy: str | None) -> requests.Session:
 
 
 def _get(session, url, params=None, accept="application/json", label=""):
-    """GET with retries. 429 uses a long backoff, other errors use a short backoff."""
+    """带重试的 GET。429 走长退避，其它错误走短退避。"""
     last = None
     for attempt in range(1, RETRIES + 1):
         try:
@@ -157,11 +155,9 @@ def _get(session, url, params=None, accept="application/json", label=""):
                 return r
             last = f"HTTP {r.status_code}"
 
-            # 429 gets its own long backoff
             if r.status_code == 429 and attempt < RETRIES:
                 wait = 20 * attempt + random.uniform(0, 5)
-                print(f"    {label} 429 rate limited, waiting {wait:.0f}s before retry "
-                      f"(attempt {attempt}/{RETRIES-1})")
+                print(f"    {label} 429 限流，等 {wait:.0f}s 后重试（第 {attempt}/{RETRIES-1} 次）")
                 time.sleep(wait)
                 continue
         except requests.RequestException as e:
@@ -169,13 +165,13 @@ def _get(session, url, params=None, accept="application/json", label=""):
 
         if attempt < RETRIES:
             wait = 2 ** attempt + random.uniform(0, 1)
-            print(f"    {label} attempt {attempt} failed ({last}), retrying in {wait:.1f}s")
+            print(f"    {label} 第 {attempt} 次失败（{last}），{wait:.1f}s 后重试")
             time.sleep(wait)
-    raise RuntimeError(f"{label}: still failing after {RETRIES} attempts: {last}")
+    raise RuntimeError(f"{label}: {RETRIES} 次尝试后仍失败：{last}")
 
 
 def _epoch(date_str: str) -> int:
-    """Local-timezone epoch — consistent with the verified-working 7.py."""
+    """本地时区 epoch —— 与实测可用的 7.py 一致。"""
     return int(pd.to_datetime(date_str).timestamp())
 
 
@@ -192,11 +188,11 @@ def safe_name(ticker: str) -> str:
 
 
 # ----------------------------------------------------------------------------
-# 1. Yahoo daily bars (price and events split into two requests)
+# 1. Yahoo 日线（价格与事件拆两次请求）
 # ----------------------------------------------------------------------------
 
 def fetch_yahoo_prices(session, ticker):
-    """First request: prices only. events='history' is the lightest."""
+    """第一次请求：只要价格。events='history' 最轻。"""
     params = {
         "period1": _epoch(START_DATE),
         "period2": _epoch(END_DATE),
@@ -205,13 +201,13 @@ def fetch_yahoo_prices(session, ticker):
         "includeAdjustedClose": "true",
     }
     payload = _get(session, YAHOO_URL.format(ticker=ticker), params,
-                   label=f"[{ticker}] price").json()
+                   label=f"[{ticker}] 价格").json()
     err = payload.get("chart", {}).get("error")
     if err:
-        raise RuntimeError(f"Yahoo returned error {err}")
+        raise RuntimeError(f"Yahoo 返回错误 {err}")
     res = payload["chart"]["result"][0]
     if not res.get("timestamp"):
-        raise RuntimeError("Yahoo returned an empty series (possibly delisted or wrong symbol)")
+        raise RuntimeError("Yahoo 返回空序列（可能已退市或代码有误）")
 
     meta = res["meta"]
     tz_name = meta["exchangeTimezoneName"]
@@ -232,7 +228,7 @@ def fetch_yahoo_prices(session, ticker):
 
 
 def fetch_yahoo_events(session, ticker):
-    """Second request: events only. Returns (None, None) on failure."""
+    """第二次请求：只要事件。失败返回 (None, None)。"""
     params = {
         "period1": _epoch(START_DATE),
         "period2": _epoch(END_DATE),
@@ -242,9 +238,9 @@ def fetch_yahoo_events(session, ticker):
     }
     try:
         payload = _get(session, YAHOO_URL.format(ticker=ticker), params,
-                       label=f"[{ticker}] events").json()
+                       label=f"[{ticker}] 事件").json()
     except RuntimeError as e:
-        print(f"    [{ticker}] events request failed: {e}")
+        print(f"    [{ticker}] 事件请求失败：{e}")
         return None, None
 
     res = payload["chart"]["result"][0]
@@ -262,12 +258,11 @@ def fetch_yahoo_events(session, ticker):
 
 
 # ----------------------------------------------------------------------------
-# 2. Bitcoin hourly candles
+# 2. 比特币小时 K 线
 # ----------------------------------------------------------------------------
 
 def fetch_coinbase_hourly(session):
-    """Coinbase Exchange public endpoint: max 300 candles per call.
-    [time, low, high, open, close, volume], newest first."""
+    """Coinbase Exchange 公共接口：每次最多 300 根。"""
     start = pd.Timestamp(HOURLY_START)
     end = pd.Timestamp(HOURLY_END)
     step = pd.Timedelta(hours=300)
@@ -279,11 +274,11 @@ def fetch_coinbase_hourly(session):
                   "end": t2.isoformat().replace("+00:00", "Z")}
         data = _get(session, COINBASE_URL, params, label="[Coinbase]").json()
         if isinstance(data, dict):
-            raise RuntimeError(f"Coinbase returned {data}")
+            raise RuntimeError(f"Coinbase 返回 {data}")
         rows.extend(data)
         n_req += 1
         if n_req % 10 == 0:
-            print(f"    Coinbase fetched up to {t2.date()} ({len(rows)} candles)")
+            print(f"    Coinbase 已取到 {t2.date()}（{len(rows)} 根）")
         t = t2
         time.sleep(0.35)
     df = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
@@ -294,7 +289,7 @@ def fetch_coinbase_hourly(session):
 
 
 def fetch_bitstamp_hourly(session):
-    """Bitstamp public endpoint: max 1000 candles per call, paginate forward by start."""
+    """Bitstamp 公共接口：每次最多 1000 根。"""
     start = int(pd.Timestamp(HOURLY_START).timestamp())
     end = int(pd.Timestamp(HOURLY_END).timestamp())
     rows, t = [], start
@@ -319,14 +314,14 @@ def fetch_bitstamp_hourly(session):
 
 
 # ----------------------------------------------------------------------------
-# Main program
+# 主程序
 # ----------------------------------------------------------------------------
 
 def main() -> None:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     proxy = _find_proxy()
     session = _session(proxy)
-    print(f"Output directory: {RAW_DIR}\nProxy: {proxy or 'none'}\n")
+    print(f"输出目录：{RAW_DIR}\n代理：{proxy or '无'}\n")
 
     manifest = {
         "as_of": AS_OF,
@@ -337,29 +332,27 @@ def main() -> None:
                     "hourly_primary": "Coinbase Exchange public candles (granularity 3600)",
                     "hourly_backup": "Bitstamp public OHLC (step 3600)",
                     "gold_benchmark": GLD_ARCHIVE, "ibit_nav": IBIT_NAV},
-        "note": ("DEFI was delisted and liquidated on 2026-08-17; the Yahoo API returns 400 "
-                 "for it, so it is not included. Price and events are fetched in two separate "
-                 "requests; Yahoo's AdjClose is retroactively recomputed with each new dividend, "
-                 "so this directory is a point-in-time snapshot and should be submitted "
-                 "together with the paper."),
+        "note": ("DEFI 已于 2026-08-17 退市清算，Yahoo API 对其返回 400，故不纳入。"
+                 "价格与事件分两次请求；Yahoo 的 AdjClose 会随新分红回溯重算，"
+                 "本目录为某一时点快照，请随论文一并提交。"),
         "files": {}, "tickers": {}, "failed": {},
     }
     ok_list, fail_list = [], []
 
-    # ---- 1. Yahoo daily bars
+    # ---- 1. Yahoo 日线
     all_events = []
     for i, (ticker, (group, desc)) in enumerate(YAHOO.items(), 1):
         print(f"[{i:2d}/{len(YAHOO)}] {ticker:8s} {desc}")
         try:
             px, payload_price, info = fetch_yahoo_prices(session, ticker)
         except Exception as e:                       # noqa: BLE001
-            print(f"    ✗ Price request failed: {e}")
+            print(f"    ✗ 价格请求失败：{e}")
             manifest["failed"][ticker] = str(e)
             fail_list.append(ticker)
             time.sleep(1)
             continue
 
-        # Sleep between the two requests
+        # 两请求之间 sleep
         time.sleep(random.uniform(*SLEEP_BETWEEN_CALLS))
 
         ev, payload_events = fetch_yahoo_events(session, ticker)
@@ -396,21 +389,21 @@ def main() -> None:
             close_equals_adjclose=bool((px.Close - px.AdjClose).abs().max() < 1e-8),
             **info,
         )
-        flag = " (events missing)" if events_missing else ""
-        print(f"    ✓ {len(px)} rows  {px.Date.min().date()} → {px.Date.max().date()}{flag}")
+        flag = "（事件缺失）" if events_missing else ""
+        print(f"    ✓ {len(px)} 行  {px.Date.min().date()} → {px.Date.max().date()}{flag}")
         ok_list.append(ticker)
-        time.sleep(3)   # Between tickers
+        time.sleep(3)   # 每个标的之间
 
     if all_events:
         ev_path = RAW_DIR / f"events__{AS_OF}.csv"
         pd.concat(all_events).sort_values(["ticker", "date"]).to_csv(ev_path, index=False)
         manifest["files"][ev_path.name] = sha256(ev_path)
     else:
-        print("\nNote: no event data at all; events__*.csv was not generated.")
+        print("\n注意：没有任何事件数据，events__*.csv 未生成。")
 
-    # ---- 2. Hourly candles
+    # ---- 2. 小时 K 线
     for name, fn in (("coinbase", fetch_coinbase_hourly), ("bitstamp", fetch_bitstamp_hourly)):
-        print(f"\n[Hourly candles] {name}")
+        print(f"\n[小时 K 线] {name}")
         try:
             df = fn(session)
             p = RAW_DIR / f"BTCUSD_1h_{name}__{AS_OF}.csv"
@@ -419,27 +412,27 @@ def main() -> None:
             manifest["tickers"][f"BTCUSD_1h_{name}"] = dict(
                 group="bitcoin_hourly", rows=int(len(df)),
                 first=str(df.time_utc.min()), last=str(df.time_utc.max()))
-            print(f"    ✓ {len(df)} candles  {df.time_utc.min()} → {df.time_utc.max()}")
+            print(f"    ✓ {len(df)} 根  {df.time_utc.min()} → {df.time_utc.max()}")
             ok_list.append(f"BTC 1h {name}")
         except Exception as e:                       # noqa: BLE001
-            print(f"    ✗ Failed: {e}")
+            print(f"    ✗ 失败：{e}")
             manifest["failed"][f"BTCUSD_1h_{name}"] = str(e)
             fail_list.append(f"BTC 1h {name}")
 
-    # ---- 3/4. Official archives (saved as-is)
+    # ---- 3/4. 官网档案（原样保存）
     for name, url, ext in (("GLD_archive", GLD_ARCHIVE, "csv"), ("IBIT_nav", IBIT_NAV, "xls")):
-        print(f"\n[Official archive] {name}")
+        print(f"\n[官网档案] {name}")
         try:
             r = _get(session, url, accept="*/*", label=f"[{name}]")
             if len(r.content) < 500:
-                raise RuntimeError(f"Response content too short ({len(r.content)} bytes)")
+                raise RuntimeError(f"返回内容过短（{len(r.content)} 字节）")
             p = RAW_DIR / f"{name}__{AS_OF}.{ext}"
             p.write_bytes(r.content)
             manifest["files"][p.name] = sha256(p)
             print(f"    ✓ {len(r.content) / 1024:.0f} KB")
             ok_list.append(name)
         except Exception as e:                       # noqa: BLE001
-            print(f"    ✗ Failed: {e}")
+            print(f"    ✗ 失败：{e}")
             manifest["failed"][name] = str(e)
             fail_list.append(name)
 
@@ -447,17 +440,16 @@ def main() -> None:
     man_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("\n" + "=" * 70)
-    print(f"Succeeded: {len(ok_list)}; Failed: {len(fail_list)}")
+    print(f"成功 {len(ok_list)} 项；失败 {len(fail_list)} 项")
     if fail_list:
-        print("Failed: " + ", ".join(fail_list))
+        print("失败：" + ", ".join(fail_list))
         must = {"BTC-USD", "IBIT", "GLD", "SPY", "TLT", "^VIX"}
         if must & set(fail_list) or {"BTC 1h coinbase", "BTC 1h bitstamp"} <= set(fail_list):
-            print("⚠️ Some required items failed (core tickers or both hourly candle sources), "
-                  "please check the network/proxy and rerun.")
+            print("⚠️ 有必需项失败（核心标的或两个小时 K 线源都失败），请检查网络/代理后重跑。")
         else:
-            print("Core data is complete; failed items will simply be skipped in the analysis.")
-    print(f"manifest: {man_path}")
-    print("Read the files with the __20260921S suffix in data/raw/.")
+            print("核心数据齐全；失败项只会在分析中被跳过。")
+    print(f"manifest：{man_path}")
+    print("完成后告诉 Claude 即可，它会直接读取 data/raw/ 里带 __20260921S 的文件。")
 
 
 if __name__ == "__main__":
