@@ -1,0 +1,36 @@
+{
+  "as_of": "20261001H",
+  "start": "2014-09-01",
+  "end": "2026-10-01",
+  "downloaded_utc": "2026-10-15T06:35:53.842963+00:00",
+  "files": {
+    "UUP__20261001H.csv": {
+      "source": "Yahoo UUP",
+      "rows": 3038,
+      "first": "2014-09-02",
+      "last": "2026-09-30",
+      "sha256": "9ac4e65f57f27ae6513c1821bc88b60ac1dddddaf61d195c4a1035a27adddd93"
+    },
+    "DFII10__20261001H.csv": {
+      "source": "U.S. Treasury real 10 YR",
+      "rows": 3021,
+      "first": "2014-09-02",
+      "last": "2026-09-30",
+      "sha256": "fd6d9a266b9377c9738aa924252b672ae7b979226faec16fa102bb04c4f85365"
+    },
+    "DGS10__20261001H.csv": {
+      "source": "U.S. Treasury nominal 10 Yr",
+      "rows": 3021,
+      "first": "2014-09-02",
+      "last": "2026-09-30",
+      "sha256": "94a7be3e38b36611ac1487818ef4497e7a1749255df47689f5223289a51caa06"
+    },
+    "T10YIE__20261001H.csv": {
+      "source": "computed: DGS10 (U.S. Treasury nominal 10 Yr) - DFII10 (U.S. Treasury real 10 YR)",
+      "rows": 3021,
+      "first": "2014-09-02",
+      "last": "2026-09-30",
+      "sha256": "5587528ec9a95d44b699b6f545a402e13b2c1b9cc12e3842a8f410ddc9efd806"
+    }
+  }
+}

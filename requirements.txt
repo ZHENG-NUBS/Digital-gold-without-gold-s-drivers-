@@ -1,0 +1,7 @@
+# Python 3.11. Versions used on the authors' machine (same environment as the companion paper).
+numpy==2.4.4
+pandas==3.0.2
+scipy==1.17.1
+statsmodels==0.15.0
+matplotlib==3.10.9
+requests==2.33.1
