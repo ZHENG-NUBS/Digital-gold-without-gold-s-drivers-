@@ -27,7 +27,8 @@ hold-out period 15 Oct 2026 – 15 Jan 2027. See [Pre-registration](#pre-registr
 | `32_long_sample.py` | Long-sample analysis: loadings by era, rolling γ and γ/γ\*, ranks of 74-day windows, end-of-sample test. |
 | `33_share_tests.py` | Calibrated tests on the long sample: rank of the final window (T1) and episodic variation (T2), by wild block bootstrap. |
 | `34_figures.py` | Draws Figures 1 and 2 for submission from the CSVs written by `30` and `32` (no estimation). |
-| `PREREGISTRATION_checksums.sha256` | SHA-256 of the eight pre-registered scripts (all of the above except `34`). |
+| `35_table_entries.py` | Table entries estimated on subsamples: γ before and after 16 Jun 2026, the drop-day checks and the end-of-sample test without 19–21 Aug 2026. Uses script 30's functions unchanged. |
+| `PREREGISTRATION_checksums.sha256` | SHA-256 of the eight pre-registered scripts (all of the above except `34` and `35`). |
 | `preregistration/` | Full protocol (`PREREGISTRATION_FRL.md`) and the answers submitted to AsPredicted. |
 | `data/raw/manifest__*.json` | Sources, request windows, download times and SHA-256 of every data file used. |
 | `out/` | The outputs behind the letter (reports, CSVs, figures). |
@@ -38,8 +39,8 @@ hold-out period 15 Oct 2026 – 15 Jan 2027. See [Pre-registration](#pre-registr
 | Letter | Output |
 |---|---|
 | Table 1 (daily and weekly factor loadings) | `out/30_debasement_20261001F_2026-09-30/report.md` sections A and D2; `tables_A_daily.csv`, `tables_D_W.csv` |
-| Table 2 (gold-specific shocks, stability) | `30…/report.md` sections A2, B, C and E (`report_sectionE.md`); long-sample rows from `out/32_long_sample/report.md` (L3, L4) and `out/33_share_tests/report.md` |
-| Table 3 (robustness) | `30…/report.md` section D (D1, D4; `tables_D_2d.csv`); placebo and two-step rows from `out/31_placebo_twostep/report.md` |
+| Table 2 (gold-specific shocks, stability) | `30…/report.md` sections A2, B, C and E (`report_sectionE.md`); γ before and after 16 Jun 2026 from `out/35_table_entries/report.md`; long-sample rows from `out/32_long_sample/report.md` (L3, L4) and `out/33_share_tests/report.md` |
+| Table 3 (robustness) | `30…/report.md` section D (D1, D4; `tables_D_2d.csv`); drop-day checks from `out/35_table_entries/report.md`; placebo and two-step rows from `out/31_placebo_twostep/report.md` |
 | Figure 1 | `out/34_figures/Figure1.*`, drawn from `30…/rolling_gres_loading.csv` |
 | Figure 2 | `out/34_figures/Figure2.*`, drawn from `out/32_long_sample/rolling_gamma_long.csv` |
 
@@ -88,17 +89,11 @@ python 31_placebo_twostep.py                  # placebo ETFs and two-step bootst
 python 32_long_sample.py                      # long sample (Table 2, Figure 2 data)
 python 33_share_tests.py                      # calibrated long-sample tests (Table 2)
 python 34_figures.py                          # Figures 1 and 2
+python 35_table_entries.py                    # subsample entries of Tables 2-3
 ```
 
 `python 30_debasement_drivers.py --selftest` checks the estimators on synthetic data with known loadings. All bootstraps
 use the seed 20261014.
-
-**Known gap (to be closed before submission).** Three entries in Tables 2–3 come from separate runs:
-- γ through 15 Jun 2026;
-- the summer-2026 γ;
-- the drop-day checks.
-
-They are not yet produced by a single command above.
 
 ## Pre-registration
 
