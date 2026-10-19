@@ -1,0 +1,9 @@
+table,entry,days,gamma,se,t,p
+Table 2,gamma through 2026-06-15,607,0.11076895797357218,0.08607399369952261,1.2869038975960347,
+Table 2,gamma 2026-06-16 to 2026-09-30,74,0.7293336575572393,0.22487845551944294,3.243234910487818,
+Table 3,summer gamma excluding 19-21 Aug 2026,71,0.5597933345689033,0.1538827065580756,3.637792362052304,
+Table 3,summer gamma excluding the 3 days with the largest absolute gold-specific shock,71,0.8559494031785979,0.24474490237988453,3.4973124868195336,
+Table 3,summer gamma excluding the 5 days with the largest absolute gold-specific shock,69,0.8507509450822047,0.25831111445930927,3.2935127350713365,
+Table 3,summer gamma excluding the 10 days with the largest absolute gold-specific shock,64,0.7894063657944826,0.3175300662907602,2.486083837716421,
+check,"end-of-sample test, full sample (check: script 30 gives 0.025)",681,,,,0.025
+Table 3,end-of-sample test excluding 19-21 Aug 2026,678,,,,0.06
